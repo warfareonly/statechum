@@ -20,6 +20,13 @@ package statechum;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
+import statechum.analysis.learning.rpnicore.testLTLToBa;
+
+/*
+Important: when running via IntelliJ Idea, the console will not show the progress of initialisation until
+a custom property editable.java.test.console=true is set (Help->Edit Custom Properties).
+ */
+
 
 /**
  * @author Kirill
@@ -43,7 +50,7 @@ public class AllTests {
     @Suite.SuiteClasses({
         statechum.analysis.learning.TestPTAConstruction.class,
         statechum.analysis.learning.TestRpniLearner.class,
-        statechum.analysis.learning.rpnicore.TestLTL_to_ba.class,
+        testLTLToBa.class,
         statechum.analysis.learning.rpnicore.TestAugmentUsingIFTHEN.class,
         statechum.analysis.learning.rpnicore.TestAugmentUsingIFTHEN.TestQuestionPTA.class,
         statechum.analysis.learning.rpnicore.TestRandomPathGenerator.class,

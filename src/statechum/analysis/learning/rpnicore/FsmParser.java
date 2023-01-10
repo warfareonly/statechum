@@ -46,10 +46,17 @@ public class FsmParser
 	private final String text;
 	private final Matcher lexer;
 
-	public FsmParser(String whatToParse)
+	/** Creates an instance of the parser.
+	 *
+	 * @param whatToParse text to parse
+	 * @param slashForEndl whether to use forward slash to separate expressions. Useful for LTS but cannot be used for Mealy automata.
+	 */
+	public FsmParser(String whatToParse, boolean slashForEndl)
 	{
 		text = "\n"+whatToParse;
-		lexer = Pattern.compile("([^\n#\\055<>/=]+)|( *<\\055+ *)|( *\\055+> *)|( *#\\055+ *)|( *\\055+# *)|( *\\055+ *)|( *=+ *)|( *[\n/] *)").matcher(text);
+		String patternSlashForEndl = "([^\n#\\055<>/=]+)|( *<\\055+ *)|( *\\055+> *)|( *#\\055+ *)|( *\\055+# *)|( *\\055+ *)|( *=+ *)|( *[\n/] *)";
+		String patternNoSlashForEndl = "([^\n#\\055<>|=]+)|( *<\\055+ *)|( *\\055+> *)|( *#\\055+ *)|( *\\055+# *)|( *\\055+ *)|( *=+ *)|( *[\n|] *)";
+		lexer = Pattern.compile(slashForEndl? patternSlashForEndl:patternNoSlashForEndl).matcher(text);
 	}
 	
 	protected boolean isFinished()
@@ -70,6 +77,7 @@ public class FsmParser
 			throwException("failed to lex");
 		
 		int i=1;
+		//noinspection StatementWithEmptyBody
 		for(;i<lexer.groupCount()+1 && lexer.group(i) == null;++i)
 		{}
 		if (i == lexer.groupCount()+1)
@@ -150,6 +158,7 @@ public class FsmParser
 					}
 					else // left == FsmParser.EQUIV
 						{
+							//noinspection ConstantConditions
 							assert left == FsmParser.EQUIV;
 							receiver.pairCompatibility(currentState,pairRelation,anotherState);
 						}
@@ -166,7 +175,7 @@ public class FsmParser
 	 * @return LearnerGraph graph for it
 	 * @throws IllegalArgumentException if fsm cannot be parsed.
 	 */
-	public final static LearnerGraph buildLearnerGraph(String fsm,String name,Configuration config,final ConvertALabel conv)
+	public static LearnerGraph buildLearnerGraph(String fsm, String name, Configuration config, final ConvertALabel conv)
 	{
 		LearnerGraph graph = new LearnerGraph(config);graph.initEmpty();
 		buildGraph(fsm,name,config,graph,conv);
@@ -181,7 +190,7 @@ public class FsmParser
 	 * @return LearnerGraphND graph for it
 	 * @throws IllegalArgumentException if fsm cannot be parsed.
 	 */
-	public final static LearnerGraphND buildLearnerGraphND(String fsm,String name,Configuration config,final ConvertALabel conv)
+	public static LearnerGraphND buildLearnerGraphND(String fsm, String name, Configuration config, final ConvertALabel conv)
 	{
 		LearnerGraphND graph = new LearnerGraphND(config);graph.initEmpty();
 		buildGraph(fsm,name,config,graph,conv);
@@ -195,16 +204,16 @@ public class FsmParser
 	 * @param conv label converter, ignored if null.
 	 * @throws IllegalArgumentException if fsm cannot be parsed.
 	 */
-	public final static <TARGET_TYPE,CACHE_TYPE extends CachedData<TARGET_TYPE,CACHE_TYPE>> void buildGraph(String fsm,String name,final Configuration config, 
-			final AbstractLearnerGraph<TARGET_TYPE,CACHE_TYPE> target,final ConvertALabel conv)
+	public static <TARGET_TYPE,CACHE_TYPE extends CachedData<TARGET_TYPE,CACHE_TYPE>> void buildGraph(String fsm, String name, final Configuration config,
+																									  final AbstractLearnerGraph<TARGET_TYPE,CACHE_TYPE> target, final ConvertALabel conv)
 	{
 		assert config.getTransitionMatrixImplType() != STATETREE.STATETREE_ARRAY || conv != null : "converter has to be set for an ARRAY transition matrix";
 		//assert conv == null || config.getTransitionMatrixImplType() == STATETREE.STATETREE_ARRAY : "non-null converter may only accompany an ARRAY transition matrix in tests";
 		target.setName(name);
-		new FsmParser(fsm).parse(new TransitionReceiver()
+		new FsmParser(fsm,config.getLabelKind() != Configuration.LABELKIND.LABEL_INPUT_OUTPUT).parse(new TransitionReceiver()
 		{
 			public void put(String from, String to, Label label, boolean accept) {
-				CmpVertex fromVertex = target.transitionMatrix.findElementById(VertexID.parseID(from)), toVertex = target.transitionMatrix.findElementById(VertexID.parseID(to));
+				CmpVertex fromVertex = target.transitionMatrix.findKey(VertexID.parseID(from)), toVertex = target.transitionMatrix.findKey(VertexID.parseID(to));
 				
 				if (fromVertex == null)
 				{
@@ -250,7 +259,7 @@ public class FsmParser
 
 			@Override
 			public void pairCompatibility(String stateA, PAIRCOMPATIBILITY pairRelation, String stateB) {
-				CmpVertex fromVertex = target.transitionMatrix.findElementById(VertexID.parseID(stateA)), toVertex = target.transitionMatrix.findElementById(VertexID.parseID(stateB));
+				CmpVertex fromVertex = target.transitionMatrix.findKey(VertexID.parseID(stateA)), toVertex = target.transitionMatrix.findKey(VertexID.parseID(stateB));
 				if (fromVertex == null)
 					throw new IllegalArgumentException("unknown vertex "+stateA);
 				if (toVertex == null)
